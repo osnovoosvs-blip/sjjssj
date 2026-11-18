@@ -19,8 +19,6 @@ jobs:
       - name: Unpack zip if pom.xml is missing
         run: |
           if [ -z "$(find . -name pom.xml -not -path '*/target/*' | head -n 1)" ]; then
-            # Ищем любые zip, в том числе "Name (1).zip", "Name (2).zip".
-            # Берём архив с наибольшим номером в скобках (без номера = 0).
             ZIP=$(find . -iname '*.zip' -not -path './.git/*' | while IFS= read -r z; do
               n=$(printf '%s' "$z" | grep -oE '\([0-9]+\)' | tail -n1 | tr -dc '0-9')
               echo "${n:-0}|$z"
@@ -41,6 +39,10 @@ jobs:
             exit 1
           fi
           echo "path=$POM" >> "$GITHUB_OUTPUT"
+
+      - name: Fix isReplaceable (Spigot API)
+        run: |
+          find . -name PbCommand.java -not -path '*/target/*' -exec sed -i 's/b\.isReplaceable()/b.isPassable()/g' {} +
 
       - name: Build
         run: mvn -B -f "${{ steps.pom.outputs.path }}" package
